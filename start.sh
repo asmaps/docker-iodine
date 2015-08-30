@@ -1,9 +1,13 @@
 #!/bin/sh
 
+set -e
+
 TUNNEL_IP=${IODINE_TUNNEL_IP:-"10.10.10.1"}
 
-# Thanks to https://github.com/jpetazzo/dockvpn for the tun/tap fix
-mkdir -p /dev/net
-mknod /dev/net/tun c 10 200
+sysctl -w net.ipv4.ip_forward=1
+iptables -t nat -A POSTROUTING -s 10.10.10.0/24 -o eth0 -j MASQUERADE
 
-exec iodined -c -f $TUNNEL_IP $IODINE_HOST -P $IODINE_PASSWORD
+iptables -S
+iptables -S -t nat
+
+iodined -c -f $TUNNEL_IP $IODINE_HOST -P $IODINE_PASSWORD -n $EXTERNAL_IP
